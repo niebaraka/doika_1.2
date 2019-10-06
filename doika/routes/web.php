@@ -45,8 +45,8 @@ Route::get('/doika', 'CampaignAdminController@showList');
 
 Route::get('/doika/client-{id}', 'CampaignClientController@getCampaignClient')->where('id', '[0-9]+');
 Route::get('/doika/donate-{id}', 'DonateController@donate')->where('id', '[0-9]+');
-Route::post('/doika/payment-record-db-{id}', 'DonateController@recordPayment')->where('id', '[0-9]+');
-Route::get('/doika/payment-record-db-{id}', 'DonateController@recordPayment')->where('id', '[0-9]+');
+Route::post('/doika/payment-record-db/{campaignId}/{orderId}', 'DonateController@recordPayment')->where('campaignId', '[0-9]+');
+Route::get('/doika/payment-record-db/{campaignId}/{orderId}', 'DonateController@recordPayment')->where('campaignId', '[0-9]+');
 
 
 Auth::routes();

@@ -1,24 +1,32 @@
 <?php
-
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Doika_confuguration;
-use App\ConfigurationPageAdmin;
-use App\Payment;
+use GuzzleHttp\Client;
 
-class PaymentImplementation extends Model {
-  static public function createPayment($request, $id) {
+class PaymentImplementation extends Model
+{
 
-    $message = file_get_contents('php://input');
-    $message = json_decode($message);
+    static public function createPayment($request, $campaignId, $orderId)
+    {
+        $payment = Payment::where('order_id', $orderId)->where('campaign_id', $campaignId)->firstOrFail();
+        $getTransactionStatus = [
+            "userName" => config('payment_gateway.username'),
+            "password" => config('payment_gateway.password'),
+            "orderId" => $payment->order_id_gateway
+        ];
+        $client = new Client([
+            'base_uri' => config('payment_gateway.url'),
+            'query' => $getTransactionStatus
+        ]);
 
-    if($message->transaction->status == "successful") {
-      $payment = new Payment;
-      $payment->campaign_id = $id;
-      $payment->amount = $message->transaction->amount * 0.01;
-      $payment->token_payment = $message->transaction->credit_card->token;
-      $payment->save();
+        $response = $client->request('GET', 'getOrderStatus.do');
+        $responseBody = json_decode($response->getBody());
+        if ($responseBody->OrderStatus == "2") {
+            $payment->amount = $responseBody->Amount * 0.01;
+            $payment->save();
+        } else {
+            error_log('Payment failed. OrderStatus: ' . $responseBody->OrderStatus . ' ErrorCode: ' . $responseBody->ErrorCode . ' ErrorMessage: ' . $responseBody->ErrorMessage);
+        }
     }
-  }
 }

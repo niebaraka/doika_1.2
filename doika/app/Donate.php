@@ -1,67 +1,46 @@
 <?php
-
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use GuzzleHttp\Client;
-use App\Doika_configuration;
 
 class Donate extends Model
 {
-    //
-    static public function getPaymentPage($request,$id){
 
+    static public function getPaymentPage($request, $id)
+    {
+        $backUrl = isset($request->backUrl) ? preg_replace('/#.+$/', '', urldecode($request->backUrl)) : ("${_SERVER['REQUEST_SCHEME']}://${_SERVER['HTTP_HOST']}/");
+        $backUrl .= (strpos($backUrl, "?") > 0) ? "&" : "?";
 
-
-
-        $idMarket = Doika_configuration::where('configuration_name','id_market')
-                ->first()->configuration_value;
-        $keyMarket = Doika_configuration::where('configuration_name','key_market')
-                ->first()->configuration_value;
-        if(Doika_configuration::where('configuration_name','is_test')
-                ->first()->configuration_value == 1){
-            $is_test = true;
-        }else{
-            $is_test = false;
-        }
-
-        $url = isset($request->url) ? urldecode($request->url) : ("https://" . $_SERVER['HTTP_HOST'] . '/');
-        $url .= (strpos($url, "?") > 0) ? "&" : "?";
-
-        $donate = $request->donate*100;
-        $GetTokenParams = [
-          "checkout" => [
-            "test" => $is_test, //true,
-            "transaction_type" => "payment",
-            "version" => 2.1,
-            "attempts" => 3,
-            "settings" => [
-              "success_url" => $url . "message=1",
-              "decline_url" => $url . "message=2",
-              "fail_url" => $url . "message=3",
-              "notification_url" => "https://".$_SERVER['HTTP_HOST']."/doika/payment-record-db-".$id,
-              "language"=> "ru"
-            ],
-            "order" =>[
-              "currency"=> "BYN",
-              "amount"=> $donate,
-              "description"=> "Order description"
-            ],
-            "customer"=> [
-            ],
-          ]
+        $donate = $request->donate * 100;
+        $orderId = uniqid(true);
+        $getTokenParams = [
+            "userName" => config('payment_gateway.username'),
+            "password" => config('payment_gateway.password'),
+            "orderNumber" => $orderId,
+            "amount" => $donate,
+            "returnUrl" => "${_SERVER['REQUEST_SCHEME']}://${_SERVER['HTTP_HOST']}/doika/payment-record-db/${id}/${orderId}?backUrl=" . urlencode("${backUrl}status=success"),
+            "failUrl" => "${_SERVER['REQUEST_SCHEME']}://${_SERVER['HTTP_HOST']}/doika/payment-record-db/${id}/${orderId}?backUrl=" . urlencode("${backUrl}status=fail")
         ];
 
         $client = new Client([
-          'base_uri' => "https://checkout.bepaid.by"
+            'base_uri' => config('payment_gateway.url'),
+            'query' => $getTokenParams
         ]);
 
-        $response = $client->request('POST', '/ctp/api/checkouts', [
-          'auth'    => [$idMarket, $keyMarket],
-          'headers' => ['Accept' => 'application/json'],
-          'json'    => $GetTokenParams,
-          'verify' => false
-        ]);
-        return $response->getBody();
+        $response = $client->request('POST', 'register.do');
+        $paymentPageMeta = json_decode($response->getBody());
+        if (isset($paymentPageMeta->errorCode)) {
+            error_log("Error when registering payment: $paymentPageMeta->errorCode - $paymentPageMeta->errorMessage");
+            $paymentPageMeta->formUrl = "${backUrl}status=fail&statusMessage=" . urlencode($paymentPageMeta->errorMessage);
+        } else {
+            $payment = new Payment();
+            $payment->campaign_id = $id;
+            $payment->amount = 0;
+            $payment->order_id = $orderId;
+            $payment->order_id_gateway = $paymentPageMeta->orderId;
+            $payment->save();
+        }
+        return $paymentPageMeta;
     }
 }

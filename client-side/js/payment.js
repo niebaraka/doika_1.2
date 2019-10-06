@@ -37,16 +37,10 @@
 
   function getBePaidJS(data) {
 
-    var options = {
-      type: 'inline',
-      id: 'donate-bePaid__form',
-      url: data.checkout.redirect_url,
-      style: window.paymentStyle,
-      size: { width: "100%", height: "100%" }
-    };
-
-    var pf = new BeGateway(options);
-    pf.buildForm();
+  // document.getElementsByClassName("donate-bePaid__form")[0].innerHTML =
+  // '<iframe src="${data.formUrl}" frameborder="0" style="display: block;
+	// margin: auto;"></iframe>'
+	  window.parent.location.href = data.formUrl;
   }
 
   function AJAXRequest(url, callback) {
@@ -66,11 +60,15 @@
 
   function back() {
     if(toMain) {
-      var parse = document.createElement('a');
-      parse.href = document.referrer;
-      var url = parse.protocol + '//' + parse.hostname + parse.pathname+ '#module-donate-wrapper';
-      
-	  window.top.location.href = url;
+      var paymentGatewayParams = ["status", "statusMessage", "orderId"];
+      var queryString = (window.parent.location.search.split('?')[1] || '')
+                                  .split('&').filter(param => !paymentGatewayParams.includes(param.split('=')[0]))
+                                  .join('&');
+	  window.top.location.href = window.parent.location.protocol + '//' + 
+	  								window.parent.location.hostname + 
+	  								window.parent.location.pathname + 
+	  								(queryString.length > 0 ? '?' + queryString : '') + 
+	  								'#module-donate-wrapper';
 
     } else
      window.parent.postMessage(['doikaMain', true], '*')
@@ -93,24 +91,7 @@
         backbutton = backbutton.style.display = "none";
         toMain = true;
         document.querySelector(".module-donate__message_button").addEventListener("click", back);
-        button.innerHTML = "Паспрабаваць яшчэ раз";
-        afterPayScroll();
-      break;
-      case 'decline':
-        var bePaidForm = document.querySelector(".donate-bePaid__form");
-        var wrapper = document.querySelector(".module-donate__message");
-        bePaidForm.style.display = "none";
-        wrapper.style.display = "flex";
-        var title = document.querySelector(".module-donate__message_title");
-        title.style.background = "url(assets/img/decline.png) center center no-repeat";
-        title.style.backgroundSize = "contain";
-        title.innerHTML = "Прабачце,транзакцыя была адхiлена банкам";
-        var button = document.querySelector(".module-donate__message_button");
-        button.innerHTML = "Паспрабаваць яшчэ раз";
-        var backbutton = document.querySelector(".module-donate__back-button");
-        backbutton = backbutton.style.display = "none";
-        toMain = true;
-        document.querySelector(".module-donate__message_button").addEventListener("click", back);
+        button.innerHTML = "Мне спадабалася! Ахвяраваць яшчэ.";
         afterPayScroll();
       break;
       case 'fail':
@@ -119,19 +100,22 @@
         bePaidForm.style.display = "none";
         wrapper.style.display = "flex";
         var title = document.querySelector(".module-donate__message_title");
-        title.innerHTML = "Прабачце,транзакцыя была адхiлена з прычыны тэхнiчнага збою";
         title.style.background = "url(assets/img/fail.png) center center no-repeat";
         title.style.backgroundSize = "contain";
+        var statusMessage = window.parent.doika.statusMessage;
+        title.innerHTML = 'Прабачце, транзакцыя была адхiлена банкам' + (statusMessage ? ': "' + statusMessage + '"' : '');
         var button = document.querySelector(".module-donate__message_button");
         button.innerHTML = "Паспрабаваць яшчэ раз";
         var backbutton = document.querySelector(".module-donate__back-button");
+        backbutton = backbutton.style.display = "none";
         toMain = true;
         document.querySelector(".module-donate__message_button").addEventListener("click", back);
-        backbutton = backbutton.style.display = "none";
         afterPayScroll();
       break;
       default:
-        var backUrl = '&url=' + encodeURIComponent(document.referrer); 
+        var backbutton = document.querySelector(".module-donate__back-button");
+      	backbutton = backbutton.style.display = "none";
+        var backUrl = '&backUrl=' + encodeURIComponent(window.parent.location.href);
         var url = '/doika/donate-' + window.parent.doika.campaignId + '?donate=' + window.parent.doikaSum + backUrl;
         AJAXRequest(url, getBePaidJS);
    }

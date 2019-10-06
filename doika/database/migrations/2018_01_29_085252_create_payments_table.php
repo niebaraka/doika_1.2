@@ -18,6 +18,8 @@ class CreatePaymentsTable extends Migration
             $table->integer('campaign_id');
             $table->foreign('campaign_id')->references('id')->on('campaigns');
             $table->double('amount');
+            $table->text('order_id');
+            $table->text('order_id_gateway');
             $table->timestamps();
         });
     }

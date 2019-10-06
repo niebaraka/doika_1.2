@@ -92,7 +92,7 @@ CREATE TABLE `doika_campaign_lang_informations` (
 --
 
 INSERT INTO `doika_campaign_lang_informations` (`id`, `campaign_id`, `campaign_lang`, `campaign_title_lang`, `campaign_description_lang`, `campaign_currency_lang`, `required_amount_lang`, `other_amount_lang`, `donate_lang`, `payment_title_lang`, `payment_description_lang`, `created_at`, `updated_at`) VALUES
-(1, 1, 'be', 'Першая кампанія па збору сродкаў', 'Збор сродкаў на добрыя справы', 'BYN', 'Неабходная сума', 'Iншая сума', 'Ахвяруй!', 'Апiсанне спосабу аплаты', 'Тут будет хранится само описание способа оплаты на языке по умолчанию', '2018-03-25 14:31:55', '2018-03-25 14:31:55');
+(1, 1, 'be', 'Першая кампанія па збору сродкаў', 'Збор сродкаў на добрыя справы', 'BYN', 'Неабходная сума', 'Iншая сума', 'Ахвяраваць!', 'Апiсанне спосабу аплаты', 'Тут будет хранится само описание способа оплаты на языке по умолчанию', '2018-03-25 14:31:55', '2018-03-25 14:31:55');
 
 -- --------------------------------------------------------
 
@@ -166,17 +166,11 @@ CREATE TABLE `doika_payments` (
   `id` int(10) UNSIGNED NOT NULL,
   `campaign_id` int(11) NOT NULL,
   `amount` double NOT NULL,
-  `token_payment` text COLLATE utf8mb4_unicode_ci,
+  `order_id` text COLLATE utf8mb4_unicode_ci,
+  `order_id_gateway` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Дамп данных таблицы `doika_payments`
---
-
-INSERT INTO `doika_payments` (`id`, `campaign_id`, `amount`, `token_payment`, `created_at`, `updated_at`) VALUES
-(1, 1, 10, 'bb18b7c7-938d-4b27-a259-0ace08229d14', '2018-03-21 05:49:42', '2018-03-21 05:49:42');
 
 -- --------------------------------------------------------
 
